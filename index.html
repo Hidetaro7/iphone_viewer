@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <style>
+      body {
+        margin: 0;
+      }
+      .ui {
+        position: fixed;
+        bottom: 0;
+        width: 100%;
+        left: 0;
+        background-color: rgba(#fff, 0.1);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="canvas-wrapper">
+      <canvas id="myCanvas"></canvas>
+    </div>
+    <div class="ui">
+      <input type="file" onchange="changeTexture(this)" />
+      <input type="color" oninput="changeBGColor(this)" />
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/109/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r109/examples/js/loaders/GLTFLoader.js"></script>
+    <script type="module" src="./js/OrbitControls.js"></script>
+    <script>
+      window.addEventListener("load", init);
+
+      let iphone = null;
+      let scene;
+
+      const textureObjName = "object010_scr_0";
+
+      function init() {
+        // サイズを指定
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+
+        // レンダラーを作成
+        const renderer = new THREE.WebGLRenderer({
+          canvas: document.querySelector("#myCanvas"),
+        });
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(width, height);
+
+        // シーンを作成
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x000000);
+
+        const light1 = new THREE.DirectionalLight(0xffffff, 1);
+        light1.position.set(100, -100, 80);
+        scene.add(light1);
+        var helper1 = new THREE.DirectionalLightHelper(light1, 10);
+        scene.add(helper1);
+        const light2 = new THREE.RectAreaLight(0xffffff, 5, 100, 100);
+        light2.position.set(-100, 100, 100);
+        scene.add(light2);
+        var helper2 = new THREE.PointLightHelper(light2, 10);
+        scene.add(helper2);
+
+        // カメラを作成
+        const camera = new THREE.PerspectiveCamera(45, width / height);
+        camera.position.set(0, 0, +500);
+
+        // const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        /* controls.enableDamping = true;
+        controls.dampingFactor = 0.2;
+        controls.autoRotate = true;
+				controls.autoRotateSpeed = 0.35; */
+
+        /*         var axes = new THREE.AxisHelper(500);
+        scene.add(axes); */
+
+        var loader = new THREE.GLTFLoader();
+        loader.load(
+          "./models/gltf/scene.gltf",
+          function (gltf) {
+            iphone = gltf.scene.children[0].children[0].children[0].children[0];
+            scene.add(iphone);
+            iphone.scale.set(2, 2, 2);
+            iphone.rotation.x = Math.PI * 2;
+
+            const light3 = new THREE.PointLight(0xffffff, 1.0);
+            light3.position.set(10, -10, 80);
+            iphone.add(light3);
+            var helper3 = new THREE.PointLightHelper(light3, 10, 200, 100);
+            iphone.add(helper3);
+            tick();
+          },
+          undefined,
+          function (error) {
+            console.error(error);
+          }
+        );
+
+        // 毎フレーム時に実行されるループイベントです
+        function tick() {
+          //iphone.rotation.y += 0.005;
+          renderer.render(scene, camera);
+          requestAnimationFrame(tick);
+        }
+      }
+      function changeTexture(target) {
+        const file = target.files[0];
+        const oURL = URL.createObjectURL(file);
+        iphone.children.forEach((obj) => {
+          if (obj.children[0].name === textureObjName) {
+            const tob = obj.children[0];
+            tob.material.needsUpdate = true;
+            tob.material.map.needsUpdate = true;
+            tob.material.map.image.src = oURL;
+            tob.material.map.flipY = true;
+
+            tob.material.map.image.onload = () => {
+              URL.revokeObjectURL(oURL);
+            };
+          }
+        });
+      }
+      function changeBGColor(target) {
+        scene.background = new THREE.Color(target.value);
+      }
+      const mouse = { x: 0, y: 0, active: false };
+      window.onmousedown = (e) => {
+        mouse.active = true;
+      };
+      window.onmouseup = (e) => {
+        mouse.active = false;
+        mouse.x = iphone.rotation.x;
+        mouse.y = iphone.rotation.y;
+      };
+      window.onmousemove = (e) => {
+        if (mouse.active) {
+          iphone.rotation.y = (mouse.x - e.pageX) * -0.01;
+          iphone.rotation.x = (mouse.y - e.pageY) * -0.01;
+          mouse.x = iphone.rotation.x;
+          mouse.y = iphone.rotation.y;
+        }
+      };
+    </script>
+  </body>
+</html>
